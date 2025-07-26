@@ -23,6 +23,14 @@ export interface UploadedFile {
   uri: string;
   type: string;
   size?: number;
+  assetInfo?: {
+    type: string;
+    requiresLicense: boolean;
+    estimatedValue: 'low' | 'medium' | 'high';
+    name: string;
+    hasLicense?: boolean;
+    licenseUri?: string;
+  };
 }
 
 export type SectorType = 'formal' | 'informal';

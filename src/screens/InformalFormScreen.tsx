@@ -13,6 +13,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { analyzeAsset, getAssetLicenseType, isLowValueAsset } from '@/utils/assetValidation';
 import Header from '@/components/Header';
 import InputField from '@/components/InputField';
 import UploadButton from '@/components/UploadButton';
@@ -39,6 +40,9 @@ const InformalFormScreen: React.FC<InformalFormScreenProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(
     formData.repaymentDate ? new Date(formData.repaymentDate) : null
   );
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [pendingLicenseUpload, setPendingLicenseUpload] = useState<string | null>(null);
+
   const pickImage = async (type: 'asset' | 'home' | 'shop' | 'illness') => {
     try {
       console.log(`Picking image for type: ${type}`);
@@ -50,37 +54,146 @@ const InformalFormScreen: React.FC<InformalFormScreenProps> = ({
       });
 
       if (!result.canceled) {
-        // Create a new uploaded file object
         const file = result.assets[0];
-        const uploadedFile = {
-          id: `${type}-${Date.now()}`,
-          name: `${type}-photo.jpg`,
-          uri: file.uri,
-          type: file.mimeType || 'image/jpeg',
-          size: file.fileSize
-        };
+        
+        if (type === 'asset') {
+          setIsAnalyzing(true);
+          try {
+            // Analyze the asset
+            const assetInfo = await analyzeAsset(file.uri);
+            
+            const uploadedFile = {
+              id: `${type}-${Date.now()}`,
+              name: `${type}-photo.jpg`,
+              uri: file.uri,
+              type: file.mimeType || 'image/jpeg',
+              size: file.fileSize,
+              assetInfo: {
+                ...assetInfo,
+                hasLicense: false
+              }
+            };
 
-        console.log(`Created uploadedFile with id: ${uploadedFile.id}`);
+            // Update form data
+            setFormData(prev => ({
+              ...prev,
+              uploadedAssets: [...prev.uploadedAssets, uploadedFile]
+            }));
 
-        // Update the form state with the new file
-        setFormData(prev => {
-          console.log(`Current uploadedAssets count: ${prev.uploadedAssets.length}`);
-          if (type === 'illness') {
+            // Check if asset requires license
+            if (assetInfo.requiresLicense) {
+              setPendingLicenseUpload(uploadedFile.id);
+              Alert.alert(
+                'License Required',
+                `This ${assetInfo.name} requires a ${getAssetLicenseType(assetInfo.type)}. Please upload the license document.`,
+                [
+                  { text: 'Upload License', onPress: () => uploadLicense(uploadedFile.id) },
+                  { text: 'Skip for now', style: 'cancel' }
+                ]
+              );
+            }
+
+            // Check if asset is low value
+            if (isLowValueAsset(assetInfo.estimatedValue)) {
+              Alert.alert(
+                'Low Value Asset',
+                `This ${assetInfo.name} appears to be of low value. Consider uploading a more valuable asset to improve your loan application.`,
+                [{ text: 'OK' }]
+              );
+            } else {
+              Alert.alert('Success', `${assetInfo.name} uploaded successfully!`);
+            }
+          } catch (error) {
+            Alert.alert('Error', 'Failed to analyze asset');
+          } finally {
+            setIsAnalyzing(false);
+          }
+        } else {
+          // Handle non-asset uploads
+          const uploadedFile = {
+            id: `${type}-${Date.now()}`,
+            name: `${type}-photo.jpg`,
+            uri: file.uri,
+            type: file.mimeType || 'image/jpeg',
+            size: file.fileSize
+          };
+
+          setFormData(prev => {
+            if (type === 'illness') {
+              return {
+                ...prev,
+                uploadedDocuments: [...prev.uploadedDocuments, uploadedFile]
+              };
+            }
             return {
               ...prev,
-              uploadedDocuments: [...prev.uploadedDocuments, uploadedFile]
+              uploadedAssets: [...prev.uploadedAssets, uploadedFile]
             };
-          }
-          return {
-            ...prev,
-            uploadedAssets: [...prev.uploadedAssets, uploadedFile]
-          };
-        });
+          });
 
-        Alert.alert('Success', `${type} photo uploaded successfully!`);
+          Alert.alert('Success', `${type} photo uploaded successfully!`);
+        }
       }
     } catch (error) {
       Alert.alert('Error', 'Failed to upload image');
+    }
+  };
+
+  const uploadLicense = async (assetId: string) => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        const file = result.assets[0];
+        
+        // Update the asset with license information
+        setFormData(prev => ({
+          ...prev,
+          uploadedAssets: prev.uploadedAssets.map(asset => 
+            asset.id === assetId 
+              ? { 
+                  ...asset, 
+                  assetInfo: { 
+                    ...asset.assetInfo!, 
+                    hasLicense: true, 
+                    licenseUri: file.uri 
+                  } 
+                }
+              : asset
+          )
+        }));
+
+        setPendingLicenseUpload(null);
+        Alert.alert('Success', 'License uploaded successfully!');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to upload license');
+    }
+  };
+
+  const checkLowValueAssets = () => {
+    const assetUploads = formData.uploadedAssets.filter(asset => asset.id.startsWith('asset-'));
+    const lowValueAssets = assetUploads.filter(asset => 
+      asset.assetInfo && isLowValueAsset(asset.assetInfo.estimatedValue)
+    );
+
+    if (lowValueAssets.length > 0) {
+      const assetNames = lowValueAssets.map(asset => asset.assetInfo?.name).join(', ');
+      Alert.alert(
+        'Low Value Assets Detected',
+        `The following assets appear to be of low value: ${assetNames}. Consider replacing them with more valuable assets to improve your loan application.`,
+        [
+          { text: 'Continue Anyway', onPress: () => onSubmit() },
+          { text: 'Review Assets', style: 'cancel' }
+        ]
+      );
+    } else {
+      onSubmit();
     }
   };
 
@@ -101,6 +214,12 @@ const InformalFormScreen: React.FC<InformalFormScreenProps> = ({
             Upload 3-10 pictures of your most valuable assets
           </Text>
           
+          {isAnalyzing && (
+            <View style={styles.analyzingContainer}>
+              <Text style={styles.analyzingText}>Analyzing asset...</Text>
+            </View>
+          )}
+          
           <View style={styles.uploadGrid}>
             {[1, 2, 3, 4].map((i) => {
               // Get all assets with 'asset-' prefix
@@ -110,31 +229,73 @@ const InformalFormScreen: React.FC<InformalFormScreenProps> = ({
               
               // Consider an asset uploaded if we have at least i assets
               const isUploaded = assetUploads.length >= i;
+              const currentAsset = assetUploads[i - 1];
+              const needsLicense = currentAsset?.assetInfo?.requiresLicense && !currentAsset?.assetInfo?.hasLicense;
+              const isLowValue = currentAsset?.assetInfo && isLowValueAsset(currentAsset.assetInfo.estimatedValue);
               
               return (
                 <TouchableOpacity
                   key={i}
                   style={[
                     styles.assetUploadBox,
-                    isUploaded && { borderColor: colors.success, borderStyle: 'solid' }
+                    isUploaded && { borderColor: colors.success, borderStyle: 'solid' },
+                    needsLicense && { borderColor: colors.warning, borderStyle: 'solid' },
+                    isLowValue && { borderColor: colors.error, borderStyle: 'solid' }
                   ]}
                   onPress={() => pickImage('asset')}
+                  disabled={isAnalyzing}
                 >
-                  {isUploaded ? (
+                  {needsLicense ? (
+                    <Ionicons name="document" size={24} color={colors.warning} />
+                  ) : isLowValue ? (
+                    <Ionicons name="warning" size={24} color={colors.error} />
+                  ) : isUploaded ? (
                     <Ionicons name="checkmark-circle" size={24} color={colors.success} />
                   ) : (
                     <Ionicons name="camera" size={24} color={colors.textSecondary} />
                   )}
                   <Text style={[
                     styles.uploadBoxText,
-                    isUploaded && { color: colors.success }
+                    isUploaded && { color: colors.success },
+                    needsLicense && { color: colors.warning },
+                    isLowValue && { color: colors.error }
                   ]}>
-                    Asset {i} {isUploaded ? '✓' : ''}
+                    {needsLicense ? 'License Required' : 
+                     isLowValue ? 'Low Value' :
+                     isUploaded ? `${currentAsset?.assetInfo?.name || 'Asset'} ✓` : 
+                     `Asset ${i}`}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
+
+          {/* Asset Summary */}
+          {formData.uploadedAssets.filter(asset => asset.id.startsWith('asset-')).length > 0 && (
+            <View style={styles.assetSummary}>
+              <Text style={styles.assetSummaryTitle}>Uploaded Assets:</Text>
+              {formData.uploadedAssets
+                .filter(asset => asset.id.startsWith('asset-'))
+                .map((asset, index) => (
+                  <View key={asset.id} style={styles.assetSummaryItem}>
+                    <Text style={styles.assetSummaryText}>
+                      {index + 1}. {asset.assetInfo?.name || 'Unknown Asset'}
+                    </Text>
+                    {asset.assetInfo?.requiresLicense && !asset.assetInfo?.hasLicense && (
+                      <TouchableOpacity
+                        style={styles.licenseButton}
+                        onPress={() => uploadLicense(asset.id)}
+                      >
+                        <Text style={styles.licenseButtonText}>Upload License</Text>
+                      </TouchableOpacity>
+                    )}
+                    {asset.assetInfo && isLowValueAsset(asset.assetInfo.estimatedValue) && (
+                      <Text style={styles.lowValueWarning}>⚠️ Low Value</Text>
+                    )}
+                  </View>
+                ))}
+            </View>
+          )}
           
           <UploadButton
             title="Upload Home Floor Photo"
@@ -389,7 +550,7 @@ const InformalFormScreen: React.FC<InformalFormScreenProps> = ({
               Alert.alert('Validation Error', 'Please upload at least 3 asset photos before submitting.');
               return;
             }
-            onSubmit();
+            checkLowValueAssets();
           }}
           activeOpacity={0.8}
           disabled={formData.uploadedAssets.filter(asset => asset.id.startsWith('asset-')).length < 3}
@@ -544,6 +705,56 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     color: '#D1D5DB',
+  },
+  analyzingContainer: {
+    padding: 16,
+    backgroundColor: colors.primary + '20',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  analyzingText: {
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  assetSummary: {
+    backgroundColor: colors.background,
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  assetSummaryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  assetSummaryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  assetSummaryText: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
+  },
+  licenseButton: {
+    backgroundColor: colors.warning,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+  licenseButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  lowValueWarning: {
+    color: colors.error,
+    fontSize: 12,
+    fontWeight: '500',
   },
 });
 
