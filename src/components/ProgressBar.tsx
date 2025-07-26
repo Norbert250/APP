@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import { colors } from '@/utils/colors';
+import { colors } from '../utils/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -31,7 +31,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep, totalSteps }) =>
 
 const styles = StyleSheet.create({
   progressContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: '5%',
     paddingVertical: 16,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,

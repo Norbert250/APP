@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/utils/colors';
+import { colors } from '../utils/colors';
 
 interface UploadButtonProps {
   title: string;

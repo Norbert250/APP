@@ -8,12 +8,13 @@ import {
   Alert,
   Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Header from '@/components/Header';
-import { colors } from '@/utils/colors';
-import { User } from '@/types';
-import { userStorage } from '@/utils/storage';
-import { mockUser } from '@/utils/mockData';
+import Header from '../components/Header';
+import { colors } from '../utils/colors';
+import { User } from '../types';
+import { userStorage } from '../utils/storage';
+import { mockUser } from '../utils/mockData';
 
 interface ProfileScreenProps {
   navigation: any;
@@ -74,17 +75,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, onLogout }) =
 
   if (!user) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <Header title="Profile" showBack={true} onBack={() => navigation.goBack()} />
         <View style={styles.loadingContainer}>
           <Text>Loading...</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Header 
         title="Profile" 
         showBack={true}
@@ -202,7 +203,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation, onLogout }) =
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -212,7 +213,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 20,
+    paddingHorizontal: '5%',
+    paddingVertical: 20,
+    paddingBottom: 100,
     gap: 20,
   },
   loadingContainer: {
@@ -223,7 +226,8 @@ const styles = StyleSheet.create({
   section: {
     backgroundColor: colors.surface,
     borderRadius: 16,
-    padding: 20,
+    paddingHorizontal: '5%',
+    paddingVertical: 20,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

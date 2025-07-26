@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { StyleSheet, Text, View, TouchableOpacity, Modal, Alert, useEffect } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View, TouchableOpacity, Modal, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import FormalFormScreen from './src/screens/FormalFormScreen';
 import InformalFormScreen from './src/screens/InformalFormScreen';
@@ -38,7 +38,8 @@ const initialFormData: FormData = {
 // Bottom Tab Navigator
 function TabNavigator({ onLogout }) {
   return (
-    <Tab.Navigator
+    <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+      <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
@@ -63,21 +64,31 @@ function TabNavigator({ onLogout }) {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 70,
+          position: 'absolute',
+          bottom: 0,
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="History" component={LoanHistoryScreen} />
-      <Tab.Screen name="Payments" component={PaymentScreen} />
-      <Tab.Screen name="Notifications" component={NotificationsScreen} />
-      <Tab.Screen 
-        name="Profile" 
-        children={(props) => <ProfileScreen {...props} onLogout={onLogout} />}
-      />
+      <Tab.Screen name="Home">
+        {(props) => <HomeScreen {...props} />}
+      </Tab.Screen>
+      <Tab.Screen name="History">
+        {(props) => <LoanHistoryScreen {...props} />}
+      </Tab.Screen>
+      <Tab.Screen name="Payments">
+        {(props) => <PaymentScreen {...props} />}
+      </Tab.Screen>
+      <Tab.Screen name="Notifications">
+        {(props) => <NotificationsScreen {...props} />}
+      </Tab.Screen>
+      <Tab.Screen name="Profile">
+        {(props) => <ProfileScreen {...props} onLogout={onLogout} />}
+      </Tab.Screen>
     </Tab.Navigator>
+    </SafeAreaView>
   );
 }
 
@@ -287,7 +298,23 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    checkAuthStatus();
+    let isMounted = true;
+    
+    const initAuth = async () => {
+      try {
+        await checkAuthStatus();
+      } catch (error) {
+        if (isMounted) {
+          console.error('Auth initialization error:', error);
+        }
+      }
+    };
+    
+    initAuth();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const checkAuthStatus = async () => {
@@ -330,12 +357,12 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator 
-          initialRouteName="Home"
+          initialRouteName="Tabs"
           screenOptions={{
             headerShown: false,
           }}
         >
-          <Stack.Screen name="Main">
+          <Stack.Screen name="Tabs">
             {(props) => <TabNavigator {...props} onLogout={handleLogout} />}
           </Stack.Screen>
           <Stack.Screen name="LoanForm" component={LoanFormScreen} />
@@ -393,7 +420,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: '5%',
+    paddingVertical: 20,
   },
   welcomeSection: {
     alignItems: 'center',
@@ -424,6 +452,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     gap: 16,
     marginBottom: 30,
+    paddingHorizontal: '5%',
   },
   primaryButton: {
     backgroundColor: colors.primary,
@@ -551,7 +580,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 16,
     padding: 24,
-    width: '80%',
+    width: '85%',
+    maxWidth: 400,
     gap: 16,
   },
   modalTitle: {

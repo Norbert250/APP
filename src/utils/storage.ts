@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
-import { User, LoanApplication, Notification } from '@/types';
+import { User, LoanApplication, Notification } from '../types';
 
 // Secure storage for sensitive data
 export const secureStorage = {

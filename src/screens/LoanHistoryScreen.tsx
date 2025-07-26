@@ -7,12 +7,13 @@ import {
   StyleSheet,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Header from '@/components/Header';
-import { colors } from '@/utils/colors';
-import { LoanApplication } from '@/types';
-import { loanStorage } from '@/utils/storage';
-import { mockLoanApplications } from '@/utils/mockData';
+import Header from '../components/Header';
+import { colors } from '../utils/colors';
+import { LoanApplication } from '../types';
+import { loanStorage } from '../utils/storage';
+import { mockLoanApplications } from '../utils/mockData';
 
 interface LoanHistoryScreenProps {
   navigation: any;
@@ -79,7 +80,7 @@ const LoanHistoryScreen: React.FC<LoanHistoryScreenProps> = ({ navigation }) => 
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Header 
         title="Loan History" 
         showBack={true}
@@ -164,7 +165,7 @@ const LoanHistoryScreen: React.FC<LoanHistoryScreenProps> = ({ navigation }) => 
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

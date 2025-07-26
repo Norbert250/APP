@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/utils/colors';
+import { colors } from '../utils/colors';
 
 interface InputFieldProps {
   label: string;

@@ -7,12 +7,13 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import Header from '@/components/Header';
-import InputField from '@/components/InputField';
-import { colors } from '@/utils/colors';
-import { Payment, LoanApplication } from '@/types';
-import { mockPayments, mockLoanApplications } from '@/utils/mockData';
+import Header from '../components/Header';
+import InputField from '../components/InputField';
+import { colors } from '../utils/colors';
+import { Payment, LoanApplication } from '../types';
+import { mockPayments, mockLoanApplications } from '../utils/mockData';
 
 interface PaymentScreenProps {
   navigation: any;
@@ -94,7 +95,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation }) => {
   const overduePayments = payments.filter(p => p.status === 'overdue');
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Header 
         title="Make Payment" 
         showBack={true}
@@ -251,7 +252,7 @@ const PaymentScreen: React.FC<PaymentScreenProps> = ({ navigation }) => {
           </View>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -261,13 +262,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   content: {
-    padding: 20,
+    paddingHorizontal: '5%',
+    paddingVertical: 20,
+    paddingBottom: 100,
     gap: 20,
   },
   section: {
     backgroundColor: colors.surface,
     borderRadius: 16,
-    padding: 20,
+    paddingHorizontal: '5%',
+    paddingVertical: 20,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

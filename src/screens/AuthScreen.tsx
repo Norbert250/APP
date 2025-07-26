@@ -10,10 +10,10 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import InputField from '@/components/InputField';
-import { colors } from '@/utils/colors';
-import { userStorage, secureStorage } from '@/utils/storage';
-import { mockUser } from '@/utils/mockData';
+import InputField from '../components/InputField';
+import { colors } from '../utils/colors';
+import { userStorage, secureStorage } from '../utils/storage';
+import { mockUser } from '../utils/mockData';
 
 interface AuthScreenProps {
   onAuthSuccess: () => void;

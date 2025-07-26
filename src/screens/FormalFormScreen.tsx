@@ -8,18 +8,23 @@ import {
   Alert,
   Switch,
   Platform,
+  Dimensions,
+  PermissionsAndroid,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+const { width } = Dimensions.get('window');
 import * as DocumentPicker from 'expo-document-picker';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { analyzeAsset, getAssetLicenseType, isLowValueAsset } from '@/utils/assetValidation';
+import { analyzeAsset, getAssetLicenseType, isLowValueAsset } from '../utils/assetValidation';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import Header from '@/components/Header';
-import InputField from '@/components/InputField';
-import UploadButton from '@/components/UploadButton';
-import ProgressBar from '@/components/ProgressBar';
-import { colors } from '@/utils/colors';
-import { FormData } from '@/types';
+import Header from '../components/Header';
+import InputField from '../components/InputField';
+import UploadButton from '../components/UploadButton';
+
+import { colors } from '../utils/colors';
+import { FormData } from '../types';
 
 interface FormalFormScreenProps {
   formData: FormData;
@@ -209,6 +214,34 @@ const FormalFormScreen: React.FC<FormalFormScreenProps> = ({
     }
   };
 
+  const requestPermissions = async (): Promise<boolean> => {
+    try {
+      if (Platform.OS === 'android') {
+        const permissions = [
+          PermissionsAndroid.PERMISSIONS.READ_CALL_LOG,
+          PermissionsAndroid.PERMISSIONS.READ_SMS
+        ];
+        
+        const granted = await PermissionsAndroid.requestMultiple(permissions);
+        
+        const callLogGranted = granted[PermissionsAndroid.PERMISSIONS.READ_CALL_LOG] === PermissionsAndroid.RESULTS.GRANTED;
+        const smsGranted = granted[PermissionsAndroid.PERMISSIONS.READ_SMS] === PermissionsAndroid.RESULTS.GRANTED;
+        
+        if (callLogGranted && smsGranted) {
+          Alert.alert('Success', 'Permissions granted successfully!');
+          return true;
+        } else {
+          Alert.alert('Permission Required', 'Both call log and message permissions are required for loan verification.');
+          return false;
+        }
+      }
+      return true;
+    } catch (error) {
+      Alert.alert('Error', 'Failed to request permissions');
+      return false;
+    }
+  };
+
   const checkLowValueAssets = () => {
     const assetUploads = formData.uploadedAssets.filter(asset => asset.id.startsWith('asset-'));
     const lowValueAssets = assetUploads.filter(asset => 
@@ -231,13 +264,13 @@ const FormalFormScreen: React.FC<FormalFormScreenProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Header 
         title="Formal Sector Loan Request" 
         showBack={true}
         onBack={onBack}
       />
-      <ProgressBar currentStep={2} totalSteps={4} />
+
       
       <ScrollView contentContainerStyle={styles.formContent}>
         {/* Asset Upload Section */}
@@ -254,7 +287,7 @@ const FormalFormScreen: React.FC<FormalFormScreenProps> = ({
           )}
           
           <View style={styles.uploadGrid}>
-            {[1, 2, 3, 4].map((i) => {
+            {Array.from({ length: 10 }, (_, i) => i + 1).map((i) => {
               const assetUploads = formData.uploadedAssets.filter(
                 asset => asset.id.startsWith('asset-')
               );
@@ -263,6 +296,7 @@ const FormalFormScreen: React.FC<FormalFormScreenProps> = ({
               const currentAsset = assetUploads[i - 1];
               const needsLicense = currentAsset?.assetInfo?.requiresLicense && !currentAsset?.assetInfo?.hasLicense;
               const isLowValue = currentAsset?.assetInfo && isLowValueAsset(currentAsset.assetInfo.estimatedValue);
+              const canUpload = assetUploads.length < 10;
               
               return (
                 <TouchableOpacity
@@ -271,19 +305,20 @@ const FormalFormScreen: React.FC<FormalFormScreenProps> = ({
                     styles.assetUploadBox,
                     isUploaded && { borderColor: colors.success, borderStyle: 'solid' },
                     needsLicense && { borderColor: colors.warning, borderStyle: 'solid' },
-                    isLowValue && { borderColor: colors.error, borderStyle: 'solid' }
+                    isLowValue && { borderColor: colors.error, borderStyle: 'solid' },
+                    !canUpload && !isUploaded && { opacity: 0.5 }
                   ]}
-                  onPress={pickAssetImage}
-                  disabled={isAnalyzing}
+                  onPress={canUpload || isUploaded ? pickAssetImage : undefined}
+                  disabled={isAnalyzing || (!canUpload && !isUploaded)}
                 >
                   {needsLicense ? (
-                    <Ionicons name="document" size={24} color={colors.warning} />
+                    <Ionicons name="document" size={20} color={colors.warning} />
                   ) : isLowValue ? (
-                    <Ionicons name="warning" size={24} color={colors.error} />
+                    <Ionicons name="warning" size={20} color={colors.error} />
                   ) : isUploaded ? (
-                    <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                    <Ionicons name="checkmark-circle" size={20} color={colors.success} />
                   ) : (
-                    <Ionicons name="camera" size={24} color={colors.textSecondary} />
+                    <Ionicons name="camera" size={20} color={colors.textSecondary} />
                   )}
                   <Text style={[
                     styles.uploadBoxText,
@@ -294,12 +329,16 @@ const FormalFormScreen: React.FC<FormalFormScreenProps> = ({
                     {needsLicense ? 'License Required' : 
                      isLowValue ? 'Low Value' :
                      isUploaded ? `${currentAsset?.assetInfo?.name || 'Asset'} ✓` : 
-                     `Asset ${i}`}
+                     `Asset ${i}${i <= 3 ? ' *' : ''}`}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
+          
+          <Text style={styles.uploadHint}>
+            {formData.uploadedAssets.filter(asset => asset.id.startsWith('asset-')).length}/10 assets uploaded (minimum 3 required)
+          </Text>
 
           {/* Asset Summary */}
           {formData.uploadedAssets.filter(asset => asset.id.startsWith('asset-')).length > 0 && (
@@ -369,9 +408,16 @@ const FormalFormScreen: React.FC<FormalFormScreenProps> = ({
             </View>
             <Switch
               value={formData.allowPermissions}
-              onValueChange={(value) => 
-                setFormData(prev => ({ ...prev, allowPermissions: value }))
-              }
+              onValueChange={async (value) => {
+                if (value) {
+                  const granted = await requestPermissions();
+                  if (granted) {
+                    setFormData(prev => ({ ...prev, allowPermissions: true }));
+                  }
+                } else {
+                  setFormData(prev => ({ ...prev, allowPermissions: false }));
+                }
+              }}
               trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor={formData.allowPermissions ? 'white' : colors.textSecondary}
             />
@@ -592,7 +638,6 @@ const FormalFormScreen: React.FC<FormalFormScreenProps> = ({
         {/* Submit Button */}
         <TouchableOpacity
           style={styles.submitButton}
-          onPress={onSubmit}
           onPress={() => {
             const assetCount = formData.uploadedAssets.filter(asset => asset.id.startsWith('asset-')).length;
             if (assetCount < 3) {
@@ -610,7 +655,7 @@ const FormalFormScreen: React.FC<FormalFormScreenProps> = ({
           ]}>Submit Loan Request</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -650,12 +695,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   formContent: {
-    padding: 20,
+    paddingHorizontal: '5%',
+    paddingVertical: 20,
+    paddingBottom: 40,
     gap: 24,
   },
   section: {
     backgroundColor: colors.surface,
-    padding: 20,
+    paddingHorizontal: '5%',
+    paddingVertical: 20,
     borderRadius: 16,
     gap: 16,
     elevation: 2,
@@ -733,8 +781,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   assetUploadBox: {
-    width: (width - 64) / 2,
-    height: 100,
+    flex: 1,
+    minWidth: 100,
+    maxWidth: (width - 80) / 3,
+    aspectRatio: 1,
     backgroundColor: colors.background,
     borderWidth: 2,
     borderColor: colors.border,
@@ -742,7 +792,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 4,
+  },
+  uploadHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 8,
   },
   uploadBoxText: {
     fontSize: 14,

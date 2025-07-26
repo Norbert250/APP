@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/utils/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { colors } from '../utils/colors';
 
 interface HeaderProps {
   title: string;
@@ -18,7 +19,8 @@ const Header: React.FC<HeaderProps> = ({
   onBack,
   onMenu
 }) => (
-  <View style={styles.header}>
+  <SafeAreaView style={styles.headerContainer} edges={['top']}>
+    <View style={styles.header}>
     {showBack ? (
       <TouchableOpacity style={styles.headerButton} onPress={onBack}>
         <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -38,15 +40,19 @@ const Header: React.FC<HeaderProps> = ({
     ) : (
       <View style={{ width: 40 }} />
     )}
-  </View>
+    </View>
+  </SafeAreaView>
 );
 
 const styles = StyleSheet.create({
+  headerContainer: {
+    backgroundColor: colors.surface,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: '5%',
     paddingVertical: 16,
     backgroundColor: colors.surface,
     borderBottomWidth: 1,

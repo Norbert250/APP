@@ -8,11 +8,11 @@ import {
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Header from '@/components/Header';
-import { colors } from '@/utils/colors';
-import { Notification } from '@/types';
-import { notificationStorage } from '@/utils/storage';
-import { mockNotifications } from '@/utils/mockData';
+import Header from '../components/Header';
+import { colors } from '../utils/colors';
+import { Notification } from '../types';
+import { notificationStorage } from '../utils/storage';
+import { mockNotifications } from '../utils/mockData';
 
 interface NotificationsScreenProps {
   navigation: any;
