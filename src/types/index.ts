@@ -43,4 +43,40 @@ export interface LoanApplication {
   status: 'pending' | 'approved' | 'rejected' | 'under_review';
   submittedAt: string;
   updatedAt: string;
+  amount: number;
+  repaymentDate: string;
+  interestRate?: number;
+  monthlyPayment?: number;
+  totalAmount?: number;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  profileImage?: string;
+  createdAt: string;
+  kycStatus: 'pending' | 'verified' | 'rejected';
+  creditScore?: number;
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  read: boolean;
+  createdAt: string;
+  actionUrl?: string;
+}
+
+export interface Payment {
+  id: string;
+  loanId: string;
+  amount: number;
+  dueDate: string;
+  paidDate?: string;
+  status: 'pending' | 'paid' | 'overdue';
+  paymentMethod?: string;
 }
