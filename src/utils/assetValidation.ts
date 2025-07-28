@@ -5,12 +5,12 @@ export interface AssetInfo {
   name: string;
 }
 
-// Mock AI/ML asset recognition - in real app this would use image recognition
-export const analyzeAsset = async (imageUri: string): Promise<AssetInfo> => {
+// Mock AI/ML asset recognition
+export const analyzeAsset = async (file: File): Promise<AssetInfo> => {
   // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise(resolve => setTimeout(resolve, 1500));
   
-  // Mock asset detection based on random selection for demo
+  // Mock asset detection based on file name or random selection
   const assets: AssetInfo[] = [
     { type: 'vehicle', requiresLicense: true, estimatedValue: 'high', name: 'Car' },
     { type: 'vehicle', requiresLicense: true, estimatedValue: 'medium', name: 'Motorcycle' },

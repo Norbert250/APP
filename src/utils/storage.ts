@@ -1,92 +1,75 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as SecureStore from 'expo-secure-store';
 import { User, LoanApplication, Notification } from '../types';
 
-// Secure storage for sensitive data
-export const secureStorage = {
-  async setItem(key: string, value: string): Promise<void> {
-    await SecureStore.setItemAsync(key, value);
-  },
-
-  async getItem(key: string): Promise<string | null> {
-    return await SecureStore.getItemAsync(key);
-  },
-
-  async removeItem(key: string): Promise<void> {
-    await SecureStore.deleteItemAsync(key);
-  },
-};
-
-// Regular storage for non-sensitive data
+// Local storage utilities
 export const storage = {
-  async setItem(key: string, value: any): Promise<void> {
-    await AsyncStorage.setItem(key, JSON.stringify(value));
+  setItem: (key: string, value: any): void => {
+    localStorage.setItem(key, JSON.stringify(value));
   },
 
-  async getItem(key: string): Promise<any> {
-    const value = await AsyncStorage.getItem(key);
+  getItem: <T>(key: string): T | null => {
+    const value = localStorage.getItem(key);
     return value ? JSON.parse(value) : null;
   },
 
-  async removeItem(key: string): Promise<void> {
-    await AsyncStorage.removeItem(key);
+  removeItem: (key: string): void => {
+    localStorage.removeItem(key);
   },
 };
 
 // User management
 export const userStorage = {
-  async saveUser(user: User): Promise<void> {
-    await storage.setItem('user', user);
+  saveUser: (user: User): void => {
+    storage.setItem('user', user);
   },
 
-  async getUser(): Promise<User | null> {
-    return await storage.getItem('user');
+  getUser: (): User | null => {
+    return storage.getItem<User>('user');
   },
 
-  async removeUser(): Promise<void> {
-    await storage.removeItem('user');
-    await secureStorage.removeItem('authToken');
+  removeUser: (): void => {
+    storage.removeItem('user');
+    storage.removeItem('authToken');
   },
 };
 
 // Loan applications
 export const loanStorage = {
-  async saveLoanApplication(loan: LoanApplication): Promise<void> {
-    const loans = await this.getLoanApplications();
+  saveLoanApplication: (loan: LoanApplication): void => {
+    const loans = loanStorage.getLoanApplications();
     const updatedLoans = [...loans, loan];
-    await storage.setItem('loanApplications', updatedLoans);
+    storage.setItem('loanApplications', updatedLoans);
   },
 
-  async getLoanApplications(): Promise<LoanApplication[]> {
-    return (await storage.getItem('loanApplications')) || [];
+  getLoanApplications: (): LoanApplication[] => {
+    return storage.getItem<LoanApplication[]>('loanApplications') || [];
   },
 
-  async updateLoanStatus(loanId: string, status: LoanApplication['status']): Promise<void> {
-    const loans = await this.getLoanApplications();
+  updateLoanStatus: (loanId: string, status: LoanApplication['status']): void => {
+    const loans = loanStorage.getLoanApplications();
     const updatedLoans = loans.map(loan => 
       loan.id === loanId ? { ...loan, status, updatedAt: new Date().toISOString() } : loan
     );
-    await storage.setItem('loanApplications', updatedLoans);
+    storage.setItem('loanApplications', updatedLoans);
   },
 };
 
 // Notifications
 export const notificationStorage = {
-  async saveNotification(notification: Notification): Promise<void> {
-    const notifications = await this.getNotifications();
+  saveNotification: (notification: Notification): void => {
+    const notifications = notificationStorage.getNotifications();
     const updatedNotifications = [notification, ...notifications];
-    await storage.setItem('notifications', updatedNotifications);
+    storage.setItem('notifications', updatedNotifications);
   },
 
-  async getNotifications(): Promise<Notification[]> {
-    return (await storage.getItem('notifications')) || [];
+  getNotifications: (): Notification[] => {
+    return storage.getItem<Notification[]>('notifications') || [];
   },
 
-  async markAsRead(notificationId: string): Promise<void> {
-    const notifications = await this.getNotifications();
+  markAsRead: (notificationId: string): void => {
+    const notifications = notificationStorage.getNotifications();
     const updatedNotifications = notifications.map(notif => 
       notif.id === notificationId ? { ...notif, read: true } : notif
     );
-    await storage.setItem('notifications', updatedNotifications);
+    storage.setItem('notifications', updatedNotifications);
   },
 };

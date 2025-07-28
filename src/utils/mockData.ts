@@ -1,4 +1,4 @@
-import { User, LoanApplication, Notification, Payment } from '@/types';
+import { User, LoanApplication, Notification, Payment } from '../types';
 
 export const mockUser: User = {
   id: 'user-1',

@@ -1,14 +1,12 @@
-export interface FormData {
-  amount: string;
-  repaymentDate: string;
-  hasRetailBusiness: boolean;
-  businessRegNumber: string;
-  businessLocation: string;
-  guarantor1: GuarantorInfo;
-  guarantor2: GuarantorInfo;
-  allowPermissions: boolean;
-  uploadedAssets: UploadedFile[];
-  uploadedDocuments: UploadedFile[];
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  profileImage?: string;
+  createdAt: string;
+  kycStatus: 'pending' | 'verified' | 'rejected';
+  creditScore?: number;
 }
 
 export interface GuarantorInfo {
@@ -20,17 +18,30 @@ export interface GuarantorInfo {
 export interface UploadedFile {
   id: string;
   name: string;
-  uri: string;
+  file: File;
   type: string;
-  size?: number;
+  size: number;
   assetInfo?: {
     type: string;
     requiresLicense: boolean;
     estimatedValue: 'low' | 'medium' | 'high';
     name: string;
     hasLicense?: boolean;
-    licenseUri?: string;
+    licenseFile?: File;
   };
+}
+
+export interface FormData {
+  amount: string;
+  repaymentDate: string;
+  hasRetailBusiness: boolean;
+  businessRegNumber: string;
+  businessLocation: string;
+  guarantor1: GuarantorInfo;
+  guarantor2: GuarantorInfo;
+  allowPermissions: boolean;
+  uploadedAssets: UploadedFile[];
+  uploadedDocuments: UploadedFile[];
 }
 
 export type SectorType = 'formal' | 'informal';
@@ -48,17 +59,6 @@ export interface LoanApplication {
   interestRate?: number;
   monthlyPayment?: number;
   totalAmount?: number;
-}
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  profileImage?: string;
-  createdAt: string;
-  kycStatus: 'pending' | 'verified' | 'rejected';
-  creditScore?: number;
 }
 
 export interface Notification {
